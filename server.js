@@ -1,55 +1,39 @@
 // Things for managing the file system
-const fs = require('fs');
 const path = require('path');
+const File = require('./fileManager');
 
-// Create defualt files
-fs.mkdir(path.join(__dirname, 'static'), (err) => {
-  fs.mkdir(path.join(__dirname, 'static', 'img'), ()=>{});
-  fs.mkdir(path.join(__dirname, 'static', 'sound'), ()=>{});
-})
-fs.mkdir(path.join(__dirname, 'data'), ()=>{
-  fs.stat(path.join(__dirname, 'data', 'auth.json'), (err, stat) => {
-    if(stat === undefined){
-      fs.writeFile(path.join(__dirname, 'data', 'auth.json'), '{}', 'utf-8', ()=>{});
-    }
-  });
-  fs.stat(path.join(__dirname, 'data', 'donations.json'), (err, stat) => {
-    if(stat === undefined){
-      fs.writeFile(path.join(__dirname, 'data', 'donations.json'), '{}', 'utf-8', ()=>{});
-    }
-  });
-  fs.stat(path.join(__dirname, 'data', 'ranges.json'), (err, stat) => {
-    if(stat === undefined){
-      fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), '[]', 'utf-8', ()=>{});
-    }
-  });
-});
+let auth = new File(path.join(__dirname, 'data', 'auth.json'), JSON.stringify({
+  twitchUsername: "",
+  twitchOAuth: "",
+  twitchChannel: "",
+  obsAddress: "",
+  obsPassword: ""
+}));
+let donations = new File(path.join(__dirname, 'data', 'donations.json'), JSON.stringify({}));
+let ranges = new File(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify([]));
 
 // Giving images and sounds files names
 const shortid = require('shortid');
 
 // API's
-const OBS = require('obs-websocket-js');
+const OBS = require('./obs');
 const Tiltify = require('tiltifyapi');
 const Twitch = require('tmi.js');
 
-let obs = new OBS();
-let tiltify, twitch;
-// Load auth
-fs.readFile(path.join(__dirname, 'data', 'auth.json'), 'utf-8', (err, data) => {
-  // let json = JSON.parse(data);
-  // tiltify = new Tiltify(json.tiltifyToken);
-  // twitch = new Twitch.client({
-  //   identity: {
-  //     username: json.twitchUsername,
-  //     password: json.twitchOAuth
-  //   },
-  //   channels: [ json.twitchChannel ]
-  // });
-  // obs.connect({
-  //   address: json.obsAddress,
-  //   password: json.obsPassword
-  // });
+let obs, tiltify, twitch;
+auth.get((json) => {
+  tiltify = new Tiltify(json.tiltifyToken);
+  twitch = new Twitch.client({
+    identity: {
+      username: json.twitchUsername,
+      password: json.twitchOAuth
+    },
+    channels: [ json.twitchChannel ]
+  });
+  obs = new OBS({
+    address: json.obsAddress,
+    password: json.obsPassword
+  });
 });
 
 // Starting Server's
@@ -66,9 +50,7 @@ const ports = {
 
 const httpServer = http.createServer(app);
 
-httpServer.listen(ports.http, () => {
-  console.log(`hosted http server on port ${ports.http}`);
-});
+httpServer.listen(ports.http);
 
 // File Routing
 app.use(express.static(path.join(__dirname, 'static')));
@@ -83,88 +65,68 @@ app.use(bodyParser.json({limit: '500mb'}));
 
 // Auth managing
 app.get('/auth', (req, res) => {
-  fs.readFile(path.join(__dirname, 'data', 'auth.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    res.json(JSON.parse(data));
+  auth.get((json) => {
+    res.json(json);
   });
 });
-function updateAuth(key, value, callback){
-  fs.readFile(path.join(__dirname, 'data', 'auth.json'), 'utf-8', (err, data) => {
-    let json = JSON.parse(data);
-    json[key] = value;
-    fs.writeFile(path.join(__dirname, 'data', 'auth.json'), JSON.stringify(json), 'utf-8', (err) => {
-      if(err){
-        throw err;
-      }
-      callback();
-    });
-  });
-}
 app.post('/obsPassword', (req, res) => {
-  updateAuth('obsPassword', req.body.password, () => {
-    res.end();
-  });
+  auth.get((json) => {
+    json.obsPassword = req.body.password;
+    return json;
+  }, res.end);
 });
 app.post('/obsAddress', (req, res) => {
-  updateAuth('obsAddress', req.body.address, () => {
-    res.end();
-  });
+  auth.get((json) => {
+    json.obsAddress = req.body.address;
+    return json;
+  }, res.end);
 });
 app.post('/tiltifyToken', (req, res) => {
-  updateAuth('tiltifyToken', req.body.token, () => {
-    res.end();
-  });
+  auth.get((json) => {
+    json.tiltifyToken = req.body.token;
+    return json;
+  }, res.end);
 });
 app.post('/twitchUsername', (req, res) => {
-  updateAuth('twitchUsername', req.body.username, () => {
-    res.end();
-  });
+  auth.get((json) => {
+    json.twitchUsername = req.body.username;
+    return json;
+  }, res.end);
 });
 app.post('/twitchOAuth', (req, res) => {
-  updateAuth('twitchOAuth', req.body.token, () => {
-    res.end();
-  });
+  auth.get((json) => {
+    json.twitchOAuth = req.body.token;
+    return json;
+  }, res.end);
 });
 app.post('/twitchChannel', (req, res) => {
-  updateAuth('twitchChannel', req.body.channel, () => {
-    res.end();
-  });
+  auth.get((json) => {
+    json.twitchChannel = req.body.channel;
+    return json;
+  }, res.end);
 });
 
 app.get('/donations', (req, res) => {
-  fs.readFile(path.join(__dirname, 'data', 'donations.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    res.json(JSON.parse(data));
+  donations.get((json) => {
+    res.json(json);
   });
 });
 app.post('/donations', (req, res) => {
-  fs.writeFile(path.join(__dirname, 'data', 'donations.json'), JSON.stringify(req.body), 'utf-8', (err) => {
-    if(err){
-      throw err;
-    }
-    res.end();
+  donations.get((json) => {
+    return req.body;
+  }, () => {
+    res.end()
   });
 });
 
 app.get('/ranges', (req, res) => {
-  fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    res.json(JSON.parse(data));
+  ranges.get((json) => {
+    res.json(json);
   });
 });
 app.get('/range/*', (req, res) => {
   let id = req.params[0];
-  fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    let json = JSON.parse(data);
+  ranges.get((json) => {
     let i = json.reduce((acc, range, index) => {
       if(range.id === id){
         return index;
@@ -175,34 +137,24 @@ app.get('/range/*', (req, res) => {
   });
 });
 app.post('/range', (req, res) => {
-  fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    let json = JSON.parse(data);
-    let id = shortid.generate();
+  let id;
+  ranges.get((json) => {
+    id = shortid.generate();
     json.push({
       id: id,
       min: 0,
       max: 100,
       images: [],
       sounds: []
-    })
-    fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-      if(err){
-        throw err;
-      }
-      res.send(id);
     });
+    return json;
+  }, () => {
+    res.send(id);
   });
 });
 app.post('/range/update', (req, res) => {
   let { id, min, max } = req.body;
-  fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    let json = JSON.parse(data);
+  ranges.get((json) => {
     let i = json.reduce((acc, range, index) => {
       if(range.id === id){
         return index;
@@ -211,18 +163,12 @@ app.post('/range/update', (req, res) => {
     }, -1);
     json[i].min = min;
     json[i].max = max;
-    fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-      res.end();
-    });
-  });
+    return json;
+  }, res.end);
 });
 app.delete('/range', (req, res) => {
   let { id } = req.body;
-  fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-    if(err){
-      throw err;
-    }
-    let json = JSON.parse(data);
+  ranges.get((json) => {
     let i = json.reduce((acc, range, index) => {
       if(range.id === id){
         return index;
@@ -230,10 +176,8 @@ app.delete('/range', (req, res) => {
       return acc;
     }, -1);
     json.pop(i);
-    fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-      res.end();
-    });
-  });
+    return json;
+  }, res.end);
 });
 
 app.post('/image', (req, res) => {
@@ -247,11 +191,7 @@ app.post('/image', (req, res) => {
       throw err;
     }
 
-    fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-      if(err){
-        throw err;
-      }
-      let json = JSON.parse(data);
+    ranges.get((json) => {
       let i = json.reduce((acc, r, index) => {
         if(r.id === range){
           return index;
@@ -259,12 +199,9 @@ app.post('/image', (req, res) => {
         return acc;
       }, -1);
       json[i].images.push(filename);
-      fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-        if(err){
-          throw err;
-        }
-        res.send(filename);
-      });
+      return json;
+    }, () => {
+      res.send(filename);
     });
   });
 });
@@ -275,24 +212,15 @@ app.delete('/image', (req, res) => {
       throw err;
     }
 
-    fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-      if(err){
-        throw err;
-      }
-      let json = JSON.parse(data);
+    ranges.get((json) => {
       json = json.map((range) => {
         range.images = range.images.filter((img) => {
           return img !== image;
         });
         return range
       });
-      fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-        if(err){
-          throw err;
-        }
-        res.end();
-      });
-    });
+      return json;
+    }, res.end);
   });
 });
 
@@ -306,11 +234,7 @@ app.post('/sound', (req, res) => {
     if(err){
       throw err;
     }
-    fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-      if(err){
-        throw err;
-      }
-      let json = JSON.parse(data);
+    ranges.get((json) => {
       let i = json.reduce((acc, r, index) => {
         if(r.id === range){
           return index;
@@ -318,12 +242,9 @@ app.post('/sound', (req, res) => {
         return acc;
       }, -1);
       json[i].sounds.push(filename);
-      fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-        if(err){
-          throw err;
-        }
-        res.send(filename);
-      });
+      return json;
+    }, () => {
+      res.send(filename);
     });
   });
 });
@@ -334,23 +255,14 @@ app.delete('/sound', (req, res) => {
       throw err;
     }
 
-    fs.readFile(path.join(__dirname, 'data', 'ranges.json'), 'utf-8', (err, data) => {
-      if(err){
-        throw err;
-      }
-      let json = JSON.parse(data);
+    ranges.get((json) => {
       json = json.map((range) => {
         range.sounds = range.sounds.filter((s) => {
           return s !== sound;
         });
         return range
       });
-      fs.writeFile(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify(json), (err) => {
-        if(err){
-          throw err;
-        }
-        res.end();
-      });
-    });
+      return json;
+    }, res.end);
   });
 });
