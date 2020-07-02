@@ -10,7 +10,7 @@
     "serverdev": "nodemon server.js --ignore 'react-ui/*'",
     "client": "cd react-ui && npm start",
     "start": "npm run server",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "dev": "concurrently \"npm run serverdev\" \"npm run client\""
   },
   "author": "Leyla Becker",
   "license": "ISC",

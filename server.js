@@ -86,28 +86,28 @@ app.use('/api/v1/', graphQL({
   graphiql: true,
 }));
 
-tiltify.getUser('gamingforglobalchange')
-.then((user) => {
-  return user.getCampaigns()
-})
-.then((campaigns) => {
-  let activeCampain = campaigns[0];
-  activeCampain.getDonationStream((donation) => {
-    // Tell chat that we have a donation
-    twitch.say('#gamingforglobalchange', `We have a $${donation.amount} donation from ${donation.name} ${donation.comment === null || donation.comment === ''?'':`with the comment "${donation.comment}"`}`);
-    // Update the donation total on stream
-    obs.send('SetSourceSettings', {
-      'sourceName': 'Donations',
-      'sourceSettings': {
-        'text': `${activeCampain.amountRaised}/${activeCampain.goal}`
-      }
-    });
-
-  });
-})
-.catch((err) => {
-  console.log(err);
-});
+// tiltify.getUser('gamingforglobalchange')
+// .then((user) => {
+//   return user.getCampaigns()
+// })
+// .then((campaigns) => {
+//   let activeCampain = campaigns[0];
+//   activeCampain.getDonationStream((donation) => {
+//     // Tell chat that we have a donation
+//     twitch.say('#gamingforglobalchange', `We have a $${donation.amount} donation from ${donation.name} ${donation.comment === null || donation.comment === ''?'':`with the comment "${donation.comment}"`}`);
+//     // Update the donation total on stream
+//     obs.send('SetSourceSettings', {
+//       'sourceName': 'Donations',
+//       'sourceSettings': {
+//         'text': `${activeCampain.amountRaised}/${activeCampain.goal}`
+//       }
+//     });
+//
+//   });
+// })
+// .catch((err) => {
+//   console.log(err);
+// });
 
 app.use(express.static(path.join(__dirname, 'static')));
 app.use(express.static(path.join(__dirname, 'react-ui', 'build')));
