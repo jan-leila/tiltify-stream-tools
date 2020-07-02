@@ -1,40 +1,53 @@
 // Things for managing the file system
 const path = require('path');
-const File = require('./fileManager');
+const fs = require('fs');
 
-let auth = new File(path.join(__dirname, 'data', 'auth.json'), JSON.stringify({
-  twitchUsername: "",
-  twitchOAuth: "",
-  twitchChannel: "",
-  obsAddress: "",
-  obsPassword: ""
-}));
-let donations = new File(path.join(__dirname, 'data', 'donations.json'), JSON.stringify({}));
-let ranges = new File(path.join(__dirname, 'data', 'ranges.json'), JSON.stringify([]));
-
-// Giving images and sounds files names
-const shortid = require('shortid');
+// Load the auth file
+console.log('loading auth file');
+let auth;
+try {
+  auth = fs.readFileSync(path.join(__dirname, 'data', 'auth.json'), 'utf-8');
+}
+catch(err){
+  auth = JSON.stringify({
+    tiltifyToken: "",
+    twitchUsername:"",
+    twitchOAuth:"",
+    twitchChannel:"",
+    obsAddress:"",
+    obsPassword:"",
+  });
+  fs.writeFile(path.join(__dirname, 'data', 'auth.json'), 'utf-8', auth, (err) => {
+    if(err){ console.log(err) };
+  });
+}
+try {
+  auth = JSON.parse(auth);
+}
+catch(err) {
+  throw err;
+}
+console.log('auth file loaded');
 
 // API's
-const OBS = require('./obs');
+const OBSWebSocket = require('obs-websocket-js');
 const Tiltify = require('tiltifyapi');
 const Twitch = require('tmi.js');
 
+// Create apis
 let obs, tiltify, twitch;
-auth.get((json) => {
-  tiltify = new Tiltify(json.tiltifyToken);
-  twitch = new Twitch.client({
-    identity: {
-      username: json.twitchUsername,
-      password: json.twitchOAuth
-    },
-    channels: [ json.twitchChannel ]
-  });
-  obs = new OBS({
-    address: json.obsAddress,
-    password: json.obsPassword
-  });
+
+tiltify = new Tiltify(auth.tiltifyToken);
+
+twitch = new Twitch.client({
+  identity: {
+    username: auth.twitchUsername,
+    password: auth.twitchOAuth
+  },
+  channels: [ auth.twitchChannel ]
 });
+
+obs = new OBSWebSocket();
 
 // Starting Server's
 // Page Routing
@@ -52,217 +65,49 @@ const httpServer = http.createServer(app);
 
 httpServer.listen(ports.http);
 
-// File Routing
+// api managing
+const compression = require('compression');
+const graphQL = require('express-graphql');
+
+// g-zip
+app.use(compression({ filter: (req, res) => {
+  if (req.headers['x-no-compression']) {
+    // don't compress responses with this request header
+    return false;
+  }
+  // fallback to standard filter function
+  return compression.filter(req, res);
+}}));
+
+let { schema, sources, ranges } = require('./graphSchema');
+//graphQL
+app.use('/api/v1/', graphQL({
+  schema: schema({ obs, address: auth.obsAddress, password: auth.obsPassword }),
+  graphiql: true,
+}));
+
+tiltify.getUser('gamingforglobalchange')
+.then((user) => {
+  return user.getCampaigns()
+})
+.then((campaigns) => {
+  let activeCampain = campaigns[0];
+  activeCampain.getDonationStream((donation) => {
+    // Tell chat that we have a donation
+    twitch.say('#gamingforglobalchange', `We have a $${donation.amount} donation from ${donation.name} ${donation.comment === null || donation.comment === ''?'':`with the comment "${donation.comment}"`}`);
+    // Update the donation total on stream
+    obs.send('SetSourceSettings', {
+      'sourceName': 'Donations',
+      'sourceSettings': {
+        'text': `${activeCampain.amountRaised}/${activeCampain.goal}`
+      }
+    });
+
+  });
+})
+.catch((err) => {
+  console.log(err);
+});
+
 app.use(express.static(path.join(__dirname, 'static')));
 app.use(express.static(path.join(__dirname, 'react-ui', 'build')));
-
-// REST managing
-const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-app.use(bodyParser.json({limit: '500mb'}));
-
-// Auth managing
-app.get('/auth', (req, res) => {
-  auth.get((json) => {
-    res.json(json);
-  });
-});
-app.post('/obsPassword', (req, res) => {
-  auth.get((json) => {
-    json.obsPassword = req.body.password;
-    return json;
-  }, res.end);
-});
-app.post('/obsAddress', (req, res) => {
-  auth.get((json) => {
-    json.obsAddress = req.body.address;
-    return json;
-  }, res.end);
-});
-app.post('/tiltifyToken', (req, res) => {
-  auth.get((json) => {
-    json.tiltifyToken = req.body.token;
-    return json;
-  }, res.end);
-});
-app.post('/twitchUsername', (req, res) => {
-  auth.get((json) => {
-    json.twitchUsername = req.body.username;
-    return json;
-  }, res.end);
-});
-app.post('/twitchOAuth', (req, res) => {
-  auth.get((json) => {
-    json.twitchOAuth = req.body.token;
-    return json;
-  }, res.end);
-});
-app.post('/twitchChannel', (req, res) => {
-  auth.get((json) => {
-    json.twitchChannel = req.body.channel;
-    return json;
-  }, res.end);
-});
-
-app.get('/donations', (req, res) => {
-  donations.get((json) => {
-    res.json(json);
-  });
-});
-app.post('/donations', (req, res) => {
-  donations.get((json) => {
-    return req.body;
-  }, () => {
-    res.end()
-  });
-});
-
-app.get('/ranges', (req, res) => {
-  ranges.get((json) => {
-    res.json(json);
-  });
-});
-app.get('/range/*', (req, res) => {
-  let id = req.params[0];
-  ranges.get((json) => {
-    let i = json.reduce((acc, range, index) => {
-      if(range.id === id){
-        return index;
-      }
-      return acc;
-    }, -1);
-    res.json(json[i]);
-  });
-});
-app.post('/range', (req, res) => {
-  let id;
-  ranges.get((json) => {
-    id = shortid.generate();
-    json.push({
-      id: id,
-      min: 0,
-      max: 100,
-      images: [],
-      sounds: []
-    });
-    return json;
-  }, () => {
-    res.send(id);
-  });
-});
-app.post('/range/update', (req, res) => {
-  let { id, min, max } = req.body;
-  ranges.get((json) => {
-    let i = json.reduce((acc, range, index) => {
-      if(range.id === id){
-        return index;
-      }
-      return acc;
-    }, -1);
-    json[i].min = min;
-    json[i].max = max;
-    return json;
-  }, res.end);
-});
-app.delete('/range', (req, res) => {
-  let { id } = req.body;
-  ranges.get((json) => {
-    let i = json.reduce((acc, range, index) => {
-      if(range.id === id){
-        return index;
-      }
-      return acc;
-    }, -1);
-    json.pop(i);
-    return json;
-  }, res.end);
-});
-
-app.post('/image', (req, res) => {
-  let { range, extension, image } = req.body;
-  let id = shortid.generate();
-  let filename = `${id}.${extension}`;
-  fs.writeFile(path.join(__dirname, 'static', 'img', filename), image, {
-    encoding: 'binary'
-  }, (err) => {
-    if(err){
-      throw err;
-    }
-
-    ranges.get((json) => {
-      let i = json.reduce((acc, r, index) => {
-        if(r.id === range){
-          return index;
-        }
-        return acc;
-      }, -1);
-      json[i].images.push(filename);
-      return json;
-    }, () => {
-      res.send(filename);
-    });
-  });
-});
-app.delete('/image', (req, res) => {
-  let { image } = req.body;
-  fs.unlink(path.join(__dirname, 'static', 'img', image), (err) => {
-    if(err){
-      throw err;
-    }
-
-    ranges.get((json) => {
-      json = json.map((range) => {
-        range.images = range.images.filter((img) => {
-          return img !== image;
-        });
-        return range
-      });
-      return json;
-    }, res.end);
-  });
-});
-
-app.post('/sound', (req, res) => {
-  let { range, sound, extension } = req.body;
-  let id = shortid.generate();
-  let filename = `${id}.${extension}`;
-  fs.writeFile(path.join(__dirname, 'static', 'sound', filename), sound, {
-    encoding: 'binary'
-  }, (err) => {
-    if(err){
-      throw err;
-    }
-    ranges.get((json) => {
-      let i = json.reduce((acc, r, index) => {
-        if(r.id === range){
-          return index;
-        }
-        return acc;
-      }, -1);
-      json[i].sounds.push(filename);
-      return json;
-    }, () => {
-      res.send(filename);
-    });
-  });
-});
-app.delete('/sound', (req, res) => {
-  let { sound } = req.body;
-  fs.unlink(path.join(__dirname, 'static', 'sound', sound), (err) => {
-    if(err){
-      throw err;
-    }
-
-    ranges.get((json) => {
-      json = json.map((range) => {
-        range.sounds = range.sounds.filter((s) => {
-          return s !== sound;
-        });
-        return range
-      });
-      return json;
-    }, res.end);
-  });
-});
