@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import gql from 'graphql-tag';
 import { useQuery, useMutation } from '@apollo/react-hooks';
 
+import useSoftState from './../../../../hooks/useSoftState'
+
 import './index.scss';
 
 const GET_SOURCES = gql`
@@ -31,12 +33,8 @@ const PLAY_SOURCE = gql`
 `;
 
 function Source({ name, id, length: _length }){
-  let [ oldLength, setOldLength ] = useState(_length);
-  let [ length, setLength ] = useState(_length);
-  if(oldLength !== _length){
-    setOldLength(_length);
-    setLength(_length);
-  }
+  let [ length, setLength ] = useSoftState(_length);
+  
   const [ updateSource ] = useMutation(UPDATE_SOUCRE);
   const [ playSource ] = useMutation(PLAY_SOURCE);
 
@@ -74,11 +72,10 @@ function Sources(){
 }
 
 function Page(){
-
-  return <>
+  return <div className="sources-page">
     <div className='title'>Sources:</div>
     <Sources/>
-  </>;
+  </div>;
 }
 
 export default Page;
