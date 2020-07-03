@@ -1,0 +1,11 @@
+
+.side-bar {
+  a {
+    display: block;
+    text-decoration: none;
+
+    &.active {
+      text-decoration: underline;
+    }
+  }
+}

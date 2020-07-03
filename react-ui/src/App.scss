@@ -1,0 +1,32 @@
+
+#root {
+  display: flex;
+  flex-direction: column;
+
+  height: 100vh;
+
+  .header {
+    height: 60px;
+
+    border-bottom: 1px solid #ddd;
+  }
+
+  .page-content {
+    display: flex;
+
+    height: 100%;
+
+    .side-bar {
+      width: 250px;
+
+      padding: 10px 0px 0px 10px;
+
+      background-color: #efefef;
+      border-right: 1px solid #ddd;
+    }
+
+    .body {
+      width: 100%;
+    }
+  }
+}
