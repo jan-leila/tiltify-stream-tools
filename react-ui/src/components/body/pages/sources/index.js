@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import gql from 'graphql-tag';
 import { useQuery, useMutation } from '@apollo/react-hooks';
 
@@ -34,7 +34,7 @@ const PLAY_SOURCE = gql`
 
 function Source({ name, id, length: _length }){
   let [ length, setLength ] = useSoftState(_length);
-  
+
   const [ updateSource ] = useMutation(UPDATE_SOUCRE);
   const [ playSource ] = useMutation(PLAY_SOURCE);
 
