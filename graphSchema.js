@@ -132,7 +132,19 @@ module.exports = ({ Source, Range }) => {
             }
             return range;
           },
-        }
+        },
+        play_range: {
+          type: SourceType,
+          description: 'update source info',
+          args: {
+            id: { type: GraphQLNonNull(GraphQLInt), },
+          },
+          resolve: (obj, { id }) => {
+            let range = Ranges.get_range(id);
+            range.play();
+            return range;
+          },
+        },
       };
     }
   });
