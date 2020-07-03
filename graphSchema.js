@@ -28,11 +28,7 @@ module.exports = ({ Source, Range }) => {
           resolve: (parent) => {
             console.log(parent);
             return parent.sources.map((source) => {
-              for(let i in sources){
-                if(sources[i].id === source){
-                  return sources[i];
-                }
-              }
+              return Source.get_source(source);
             }).filter((source) => { return source !== undefined });
           },
         },
@@ -128,8 +124,9 @@ module.exports = ({ Source, Range }) => {
             max: { type: GraphQLFloat, },
             sources: { type: GraphQLList(GraphQLInt), },
           },
-          resolve: (obj, { id: _id, ...args}) => {
+          resolve: (obj, { id, ...args}) => {
             let range = Range.get_range(id);
+            console.log(range);
             for(let key in args){
               range[key] = args[key];
             }
