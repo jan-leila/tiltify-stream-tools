@@ -79,10 +79,106 @@ app.use(compression({ filter: (req, res) => {
   return compression.filter(req, res);
 }}));
 
-let { schema, sources, ranges } = require('./graphSchema');
+
+const shortid = require('shortid');
+
+class Source {
+  static sources = [];
+
+  static get_source(id){
+    for(let i in Source.sources){
+      if(Source.sources[i].id === id){
+        return Source.sources[i];
+      }
+    }
+  }
+
+  constructor({ id, name, length = 1000 }){
+    this.id = id;
+    this.length = length;
+    this.name = name;
+
+    Source.sources.push(this);
+  }
+
+  set_length(length){
+    //TODO: save length to file
+    this.length = length;
+  }
+
+  play(){
+    // TODO: write this
+    console.log(`playing source ${this.name} (${this.id})`);
+  }
+}
+
+class Range {
+  static ranges = [];
+
+  static get_range(id){
+    for(let i in Range.ranges){
+      if(Range.ranges[i].id === id){
+        return Range.ranges[i];
+      }
+    }
+  }
+
+  constructor({ min, max, weight, sources }){
+    this.id = shortid.generate();
+    this.min = min;
+    this.max = max;
+    this.weight = weight;
+    this.sources = sources;
+
+    Range.ranges.push(this);
+  }
+
+  play(){
+    Source.sources.map(({ play, id }) => {
+      if(this.sources.indexOf(id) !== -1){
+        play();
+      }
+    });
+  }
+}
+
+obs.connect({ address: auth.obsAddress, password: auth.obsPassword })
+.then(() => {
+  obs.on('SceneItemAdded', ({ 'scene-name': scene, 'item-name': name, 'item-id': id}) => {
+    if(scene !== 'donations'){
+      return;
+    }
+    new Source({ name, id });
+  });
+  obs.on('SceneItemRemoved', ({ 'scene-name': scene, 'item-id': id}) => {
+    if(scene !== 'donations'){
+      return;
+    }
+    Source.sources = Source.sources.filter(({ _id }) => {
+      return _id !== id;
+    });
+  });
+  return obs.send('GetSceneList');
+})
+.then(({ scenes }) => {
+  for(let i in scenes){
+    if(scenes[i].name === 'donations'){
+      return Promise.resolve(scenes[i]);
+    }
+  }
+  return Promise.reject("donation scene not found");
+})
+.then(({ sources }) => {
+  for(let i in sources){
+    new Source(sources[i]);
+  }
+})
+.catch(console.log);
+
+let schema = require('./graphSchema');
 //graphQL
 app.use('/api/v1/', graphQL({
-  schema: schema({ obs, address: auth.obsAddress, password: auth.obsPassword }),
+  schema: schema({ Source, Range }),
   graphiql: true,
 }));
 
