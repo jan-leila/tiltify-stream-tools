@@ -23,11 +23,11 @@ const UPDATE_SOUCRE = gql`
 `;
 
 const PLAY_SOURCE = gql`
-mutation($id: Int!){
-  play_source(id: $id){
-    id
+  mutation($id: Int!){
+    play_source(id: $id){
+      id
+    }
   }
-}
 `;
 
 function Source({ name, id, length: _length }){
