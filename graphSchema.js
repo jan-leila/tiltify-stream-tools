@@ -26,7 +26,6 @@ module.exports = ({ Source, Range }) => {
         sources: {
           type: GraphQLNonNull(GraphQLList(SourceType)),
           resolve: (parent) => {
-            console.log(parent);
             return parent.sources.map((source) => {
               return Source.get_source(source);
             }).filter((source) => { return source !== undefined });
@@ -126,7 +125,6 @@ module.exports = ({ Source, Range }) => {
           },
           resolve: (obj, { id, ...args}) => {
             let range = Range.get_range(id);
-            console.log(range);
             for(let key in args){
               range[key] = args[key];
             }
