@@ -154,7 +154,7 @@ obs.connect({ address: auth.obsAddress, password: auth.obsPassword })
     if(scene !== 'donations'){
       return;
     }
-    Source.sources = Source.sources.filter(({ _id }) => {
+    Source.sources = Source.sources.filter(({ id: _id }) => {
       return _id !== id;
     });
   });
