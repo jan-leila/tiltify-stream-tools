@@ -4,6 +4,14 @@ const shortid = require('shortid');
 
 let sources = [];
 let ranges = [];
+function getSource(id){
+  for(let i in sources){
+    if(sources[i].id === id){
+      return i;
+    }
+  }
+}
+
 function getRange(id){
   for(let i in ranges){
     if(ranges[i]._id === id){
@@ -31,7 +39,7 @@ module.exports = {
         if(scene !== 'donations'){
           return;
         }
-        sources.push({ name, id });
+        sources.push({ name, id, length: 1000 });
       });
       obs.on('SceneItemRemoved', ({ 'scene-name': scene, 'item-id': id}) => {
         if(scene !== 'donations'){
@@ -53,7 +61,8 @@ module.exports = {
     })
     .then(({ sources: _sources }) => {
       sources = [ ...sources, ..._sources.map(({ name, id }) => {
-        return { name, id };
+        // TODO: load length from file
+        return { name, id, length: 1000 };
       }) ];
     })
     .catch(console.log);
@@ -65,6 +74,7 @@ module.exports = {
         return {
           id: { type: GraphQLNonNull(GraphQLInt), },
           name: { type: GraphQLString, },
+          length: { type: GraphQLNonNull(GraphQLInt), },
         };
       },
     });
@@ -113,6 +123,33 @@ module.exports = {
       description: '',
       fields: () => {
         return {
+          update_source: {
+            type: SourceType,
+            description: 'update source info',
+            args: {
+              id: { type: GraphQLNonNull(GraphQLInt), },
+              length: { type: GraphQLInt },
+            },
+            resolve: (obj, { id, ...args }) => {
+              let i = getSource(id);
+              sources[i] = { ...sources[i], ...args };
+              // TODO: save length
+              return sources[i];
+            },
+          },
+          play_source: {
+            type: SourceType,
+            description: 'update source info',
+            args: {
+              id: { type: GraphQLNonNull(GraphQLInt), },
+            },
+            resolve: (obj, { id }) => {
+              let i = getSource(id);
+              console.log(id);
+              // TODO: play source
+              return sources[i];
+            },
+          },
           create_range: {
             type: DonationRangeType,
             description: 'create a new donation range',
