@@ -123,7 +123,7 @@ class Range {
     }
   }
 
-  constructor({ min = -1, max = -1, weight = 0, sources = [] }){
+  constructor({ min = -1, max = -1, weight = 1, sources = [] }){
     this.id = shortid.generate();
     this.min = min;
     this.max = max;
