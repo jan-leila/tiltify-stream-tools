@@ -62,7 +62,7 @@ module.exports = ({ Source, Range }) => {
             return Source.sources;
           },
         },
-        get_donation_ranges: {
+        get_ranges: {
           type: GraphQLList(DonationRangeType),
           description: 'get a list of the donation ranges that are defined',
           resolve: () => {
