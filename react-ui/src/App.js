@@ -10,13 +10,13 @@ import Header from './components/header';
 import SideBar from './components/side_bar';
 import Body from './components/body';
 
-// const apollo_client = new ApolloClient({
-//   uri: '/api/v1',
-// });
+const apollo_client = new ApolloClient({
+  uri: '/api/v1',
+});
 
 function App() {
   return (
-    // <ApolloProvider client={apollo_client}>
+    <ApolloProvider client={apollo_client}>
       <Router>
         <Header/>
         <div className="page-content">
@@ -24,7 +24,7 @@ function App() {
           <Body/>
         </div>
       </Router>
-    // </ApolloProvider>
+    </ApolloProvider>
   )
 }
 
