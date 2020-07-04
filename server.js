@@ -142,38 +142,58 @@ class Range {
   }
 }
 
-obs.connect({ address: auth.obsAddress, password: auth.obsPassword })
-.then(() => {
-  obs.on('SceneItemAdded', ({ 'scene-name': scene, 'item-name': name, 'item-id': id}) => {
-    if(scene !== 'donations'){
-      return;
-    }
+obs.on('SceneItemAdded', ({ 'scene-name': scene, 'item-name': name, 'item-id': id}) => {
+  if(scene === 'donations'){
     new Source({ name, id });
-  });
-  obs.on('SceneItemRemoved', ({ 'scene-name': scene, 'item-id': id}) => {
-    if(scene !== 'donations'){
-      return;
-    }
+  }
+});
+obs.on('SceneItemRemoved', ({ 'scene-name': scene, 'item-id': id}) => {
+  if(scene === 'donations'){
     Source.sources = Source.sources.filter(({ id: _id }) => {
       return _id !== id;
     });
-  });
-  return obs.send('GetSceneList');
-})
-.then(({ scenes }) => {
-  for(let i in scenes){
-    if(scenes[i].name === 'donations'){
-      return Promise.resolve(scenes[i]);
+  }
+});
+
+function obs_reconect(){
+  // try to connect to obs till it works
+  new Promise((resolve, reject) => {
+    let count = 0;
+    function connect(){
+      console.log(`connecting to obs${count === 0?'':` [attempt #${count}]`}`);
+      obs.connect({ address: auth.obsAddress, password: auth.obsPassword })
+      .then(resolve)
+      .catch(() => {
+        count++;
+        setTimeout(connect, 500);
+      });
     }
-  }
-  return Promise.reject("donation scene not found");
-})
-.then(({ sources }) => {
-  for(let i in sources){
-    new Source(sources[i]);
-  }
-})
-.catch(console.log);
+    connect();
+  })
+  .then(() => {
+    return obs.send('GetSceneList');
+  })
+  .then(({ scenes }) => {
+    for(let i in scenes){
+      if(scenes[i].name === 'donations'){
+        return Promise.resolve(scenes[i]);
+      }
+    }
+    return Promise.reject("donation scene not found");
+  })
+  .then(({ sources }) => {
+    for(let i in sources){
+      new Source(sources[i]);
+    }
+  })
+  .catch(console.log);
+}
+// connect to obs
+obs_reconect();
+// if obs ever closes try to connect again
+obs.on('Exiting', () => {
+  setTimeout(obs_reconect, 10000);
+});
 
 let schema = require('./graphSchema');
 //graphQL
