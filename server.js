@@ -192,6 +192,7 @@ function obs_reconect(){
 obs_reconect();
 // if obs ever closes try to connect again
 obs.on('Exiting', () => {
+  Source.sources = [];
   setTimeout(obs_reconect, 10000);
 });
 
