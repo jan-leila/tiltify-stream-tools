@@ -131,6 +131,18 @@ module.exports = ({ Source, Range }) => {
             return range;
           },
         },
+        delete_range: {
+          type: DonationRangeType,
+          description: 'delete a donation range',
+          args: {
+            id: { type: GraphQLNonNull(GraphQLString), },
+          },
+          resolve: (obs, { id }) => {
+            Range.rages = Range.rages.filter(({ id: _id }) => {
+              return id === _id;
+            });
+          },
+        },
         play_range: {
           type: SourceType,
           description: 'update source info',
