@@ -1,21 +1,19 @@
 
 .sources-page{
   .sources {
-    margin: 15px;
-    padding: 15px;
-    border-radius: 15px;
-
-    background-color: #ddd;
-
-    &:hover {
-      background-color: #ccc;
-      &:active {
-        background-color: #bbb;
-      }
-    }
-
     .source {
+        margin: 15px;
+        padding: 15px;
+        border-radius: 15px;
 
+        background-color: #ddd;
+
+        &:hover {
+          background-color: #ccc;
+          &:active {
+            background-color: #bbb;
+          }
+        }
     }
   }
 }
