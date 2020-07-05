@@ -138,9 +138,9 @@ module.exports = ({ Source, Range }) => {
             id: { type: GraphQLNonNull(GraphQLString), },
           },
           resolve: (obs, { id }) => {
-            for(let i in Range.rages){
-              if(Range.rages[i].id === id){
-                return Range.rages.splice(i)[0];
+            for(let i in Range.ranges){
+              if(Range.ranges[i].id === id){
+                return Range.ranges.splice(i)[0];
               }
             }
           },
