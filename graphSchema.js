@@ -27,7 +27,7 @@ module.exports = ({ Source, Range }) => {
           type: GraphQLNonNull(GraphQLList(SourceType)),
           resolve: (parent) => {
             return parent.sources.map((source) => {
-              return Source.get_source(source);
+              return Source.getInstance(source);
             }).filter((source) => { return source !== undefined });
           },
         },
@@ -47,21 +47,21 @@ module.exports = ({ Source, Range }) => {
             id: { type: GraphQLNonNull(GraphQLInt), },
           },
           resolve: (obj, { id }) => {
-            return Source.get_source(id);
+            return Source.getInstance(id);
           },
         },
         get_sources: {
           type: GraphQLList(SourceType),
           description: 'get a list of sources in obs',
           resolve: () => {
-            return Source.sources;
+            return Source.getInstances();
           },
         },
         get_ranges: {
           type: GraphQLList(DonationRangeType),
           description: 'get a list of the donation ranges that are defined',
           resolve: () => {
-            return Range.ranges;
+            return Range.getInstances();
           },
         },
       };
@@ -81,9 +81,9 @@ module.exports = ({ Source, Range }) => {
             length: { type: GraphQLInt },
           },
           resolve: (obj, { id, length }) => {
-            let source = Source.get_source(id);
+            let source = Source.getInstance(id);
             if(length){
-              source.set_length(length);
+              source.setArgs({ length });
             }
             return source;
           },
@@ -95,7 +95,7 @@ module.exports = ({ Source, Range }) => {
             id: { type: GraphQLNonNull(GraphQLInt), },
           },
           resolve: (obj, { id }) => {
-            let source = Source.get_source(id);
+            let source = Source.getInstance(id);
             source.play();
             return source;
           },
@@ -124,10 +124,8 @@ module.exports = ({ Source, Range }) => {
             sources: { type: GraphQLList(GraphQLInt), },
           },
           resolve: (obj, { id, ...args}) => {
-            let range = Range.get_range(id);
-            for(let key in args){
-              range[key] = args[key];
-            }
+            let range = Range.getInstance(id);
+            range.setArgs(args);
             return range;
           },
         },
@@ -138,11 +136,7 @@ module.exports = ({ Source, Range }) => {
             id: { type: GraphQLNonNull(GraphQLString), },
           },
           resolve: (obs, { id }) => {
-            for(let i in Range.ranges){
-              if(Range.ranges[i].id === id){
-                return Range.ranges.splice(i)[0];
-              }
-            }
+            return Range.delete(id);
           },
         },
         play_range: {
@@ -152,7 +146,7 @@ module.exports = ({ Source, Range }) => {
             id: { type: GraphQLNonNull(GraphQLInt), },
           },
           resolve: (obj, { id }) => {
-            let range = Ranges.get_range(id);
+            let range = Ranges.getInstance(id);
             range.play();
             return range;
           },

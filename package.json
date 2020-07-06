@@ -7,7 +7,7 @@
     "preinstall": "cd react-ui && npm i",
     "build": "cd react-ui && npm run build",
     "server": "node server.js",
-    "serverdev": "nodemon server.js --ignore 'react-ui/*'",
+    "serverdev": "nodemon server.js --ignore 'react-ui/*' --ignore 'data/*'",
     "client": "cd react-ui && npm start",
     "start": "npm run server",
     "dev": "concurrently \"npm run serverdev\" \"npm run client\""
