@@ -369,8 +369,9 @@ tiltify.getUser('gamingforglobalchange')
         'text': `${activeCampain.amountRaised}/${activeCampain.goal}`
       }
     });
-    let ranges = Range.getInstances().filter(({ amount, weight }) => {
-      return (amount < max || max === -1) && (amount > min || min === -1) && weight !== 0;
+    console.log(`Donation!!! $${amount}`);
+    let ranges = Range.getInstances().filter(({ min, max, weight }) => {
+      return (donation.amount < max || max === -1) && (donation.amount > min || min === -1) && weight !== 0;
     });
     let weight = ranges.reduce((acc, { weight }) => {
       return acc + weight;
@@ -378,6 +379,7 @@ tiltify.getUser('gamingforglobalchange')
     weight = Math.floor(Math.random() * weight);
     for(let i in ranges){
       if(i <= 0){
+        console.log(ranges[i]);
         ranges[i].play();
         break;
       }
