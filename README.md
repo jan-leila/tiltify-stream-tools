@@ -16,3 +16,7 @@ Requirements:
 * [The latest version of this project (None yet available)]()
 
 After obs is installed and obs-websocket is added to it run this project. You should then be able to access the web portal at 127.0.0.1:3000 or localhost:3000
+
+### Useful Things
+https://twitchapps.com/tmi/
+https://tiltify.com/@me/dashboard/account/apps/create
